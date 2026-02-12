@@ -1,0 +1,40 @@
+# SupplierComply - Python Dependencies
+# GS1 Barcode Compliance Platform for Kenya Medical Suppliers
+
+# Web Framework
+Flask==2.3.3
+Flask-SQLAlchemy==3.0.5
+Flask-Login==0.6.2
+Flask-Mail==0.9.1
+Flask-CORS==4.0.0
+
+# Database
+SQLAlchemy==2.0.21
+psycopg2-binary==2.9.7
+Flask-Migrate==4.0.5
+
+# Security
+bcrypt==4.0.1
+Werkzeug==2.3.7
+
+# Barcode Generation
+python-barcode==0.15.1
+Pillow==10.0.1
+
+# Cloud Storage
+cloudinary==1.36.0
+
+# Excel Generation
+openpyxl==3.1.2
+
+# PDF Generation
+reportlab==4.0.6
+
+# Environment Variables
+python-dotenv==1.0.0
+
+# Production Server
+gunicorn==21.2.0
+
+# Utilities
+requests==2.31.0

@@ -1,0 +1,535 @@
+{% extends "base.html" %}
+
+{% block title %}KEMSA Export - SupplierComply{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Page Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">KEMSA Export</h1>
+                    <p class="text-gray-600 mt-1">Upload your inventory and generate KEMSA-ready Excel files</p>
+                </div>
+                <a href="/dashboard" class="text-primary-600 hover:text-primary-800">
+                    <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Step Indicator -->
+        <div class="mb-8">
+            <div class="flex items-center justify-center">
+                <div class="flex items-center">
+                    <div id="step-1-indicator" class="w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center font-semibold">1</div>
+                    <div class="ml-3 mr-8">
+                        <p class="text-sm font-medium text-gray-900">Upload CSV</p>
+                        <p class="text-xs text-gray-500">Select your inventory file</p>
+                    </div>
+                </div>
+                <div class="w-16 h-0.5 bg-gray-300" id="step-1-2-line"></div>
+                <div class="flex items-center ml-8">
+                    <div id="step-2-indicator" class="w-10 h-10 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-semibold">2</div>
+                    <div class="ml-3 mr-8">
+                        <p class="text-sm font-medium text-gray-500" id="step-2-text">Map Columns</p>
+                        <p class="text-xs text-gray-400">Match fields to KEMSA format</p>
+                    </div>
+                </div>
+                <div class="w-16 h-0.5 bg-gray-300" id="step-2-3-line"></div>
+                <div class="flex items-center ml-8">
+                    <div id="step-3-indicator" class="w-10 h-10 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-semibold">3</div>
+                    <div class="ml-3">
+                        <p class="text-sm font-medium text-gray-500" id="step-3-text">Download</p>
+                        <p class="text-xs text-gray-400">Get KEMSA-ready Excel</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 1: Upload -->
+        <div id="step-1" class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-xl shadow-sm p-8">
+                <div class="text-center mb-8">
+                    <div class="w-16 h-16 bg-primary-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-cloud-upload-alt text-primary-600 text-2xl"></i>
+                    </div>
+                    <h2 class="text-xl font-semibold text-gray-900">Upload Your Inventory</h2>
+                    <p class="text-gray-600 mt-2">Upload a CSV file with your product data</p>
+                </div>
+                
+                <!-- File Upload Area -->
+                <div id="upload-area" class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-primary-500 transition cursor-pointer">
+                    <input type="file" id="csv-file" accept=".csv" class="hidden">
+                    <i class="fas fa-file-csv text-4xl text-gray-400 mb-4"></i>
+                    <p class="text-gray-600 mb-2">Drag and drop your CSV file here</p>
+                    <p class="text-sm text-gray-400">or click to browse</p>
+                    <p class="text-xs text-gray-400 mt-4">Maximum file size: 5MB</p>
+                </div>
+                
+                <!-- Selected File -->
+                <div id="selected-file" class="hidden mt-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center">
+                            <i class="fas fa-file-csv text-green-600 text-xl mr-3"></i>
+                            <div>
+                                <p class="font-medium text-gray-900" id="file-name">file.csv</p>
+                                <p class="text-sm text-gray-500" id="file-size">0 KB</p>
+                            </div>
+                        </div>
+                        <button onclick="removeFile()" class="text-red-600 hover:text-red-800">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Upload Button -->
+                <button id="upload-btn" onclick="uploadFile()" class="w-full mt-6 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                    <i class="fas fa-upload mr-2"></i>Upload and Continue
+                </button>
+                
+                <!-- Template Download -->
+                <div class="mt-6 text-center">
+                    <p class="text-sm text-gray-600">Don't have a CSV file?</p>
+                    <a href="/kemsa/template" class="text-primary-600 hover:underline text-sm">
+                        <i class="fas fa-download mr-1"></i>Download KEMSA Template
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 2: Column Mapping -->
+        <div id="step-2" class="hidden max-w-3xl mx-auto">
+            <div class="bg-white rounded-xl shadow-sm p-8">
+                <h2 class="text-xl font-semibold text-gray-900 mb-6">Map Your Columns</h2>
+                <p class="text-gray-600 mb-6">Match your CSV columns to KEMSA required fields</p>
+                
+                <div id="mapping-form" class="space-y-4">
+                    <!-- Mappings will be generated here -->
+                </div>
+                
+                <!-- Preview Section -->
+                <div class="mt-8">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4">Preview</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full border border-gray-200 rounded-lg">
+                            <thead id="preview-head" class="bg-gray-50">
+                                <!-- Headers will be generated here -->
+                            </thead>
+                            <tbody id="preview-body" class="divide-y divide-gray-200">
+                                <!-- Preview rows will be generated here -->
+                            </tbody>
+                        </table>
+                    </div>
+                    <p class="text-sm text-gray-500 mt-2">Showing first 10 rows</p>
+                </div>
+                
+                <!-- Validation Errors -->
+                <div id="validation-errors" class="hidden mt-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+                    <h4 class="font-semibold text-red-800 mb-2">
+                        <i class="fas fa-exclamation-triangle mr-1"></i>Validation Errors
+                    </h4>
+                    <ul id="error-list" class="text-sm text-red-700 space-y-1">
+                        <!-- Errors will be listed here -->
+                    </ul>
+                </div>
+                
+                <div class="mt-6 flex space-x-4">
+                    <button onclick="goToStep(1)" class="px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                        <i class="fas fa-arrow-left mr-2"></i>Back
+                    </button>
+                    <button id="preview-btn" onclick="previewMapping()" class="flex-1 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition">
+                        <i class="fas fa-eye mr-2"></i>Preview
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Step 3: Download -->
+        <div id="step-3" class="hidden max-w-2xl mx-auto">
+            <div class="bg-white rounded-xl shadow-sm p-8 text-center">
+                <div id="download-success">
+                    <div class="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-check text-green-600 text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-2">Ready to Download!</h2>
+                    <p class="text-gray-600 mb-6">Your KEMSA-formatted Excel file is ready</p>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <div class="flex items-center justify-center mb-4">
+                            <i class="fas fa-file-excel text-green-600 text-4xl"></i>
+                        </div>
+                        <p class="font-medium text-gray-900" id="download-filename">KEMSA_Export.xlsx</p>
+                        <p class="text-sm text-gray-500" id="download-rows">0 rows</p>
+                    </div>
+                    
+                    <button id="download-btn" onclick="downloadExcel()" class="w-full py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
+                        <i class="fas fa-download mr-2"></i>Download Excel File
+                    </button>
+                    
+                    <button onclick="startOver()" class="mt-4 text-primary-600 hover:underline">
+                        Start Over
+                    </button>
+                </div>
+                
+                <!-- Upgrade Block (Free Users) -->
+                <div id="download-blocked" class="hidden">
+                    <div class="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                        <i class="fas fa-lock text-yellow-600 text-3xl"></i>
+                    </div>
+                    <h2 class="text-2xl font-semibold text-gray-900 mb-2">Download Locked</h2>
+                    <p class="text-gray-600 mb-6">Excel download is a paid feature. Upgrade to unlock.</p>
+                    
+                    <div class="bg-gray-50 rounded-lg p-6 mb-6">
+                        <p class="text-sm text-gray-600 mb-4">Your preview shows <span id="preview-row-count">0</span> rows ready for export</p>
+                        <div class="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                            <i class="fas fa-check text-green-500"></i>
+                            <span>Data validated</span>
+                            <i class="fas fa-check text-green-500 ml-4"></i>
+                            <span>KEMSA format ready</span>
+                        </div>
+                    </div>
+                    
+                    <a href="/payment/upgrade" class="inline-block w-full py-4 bg-gradient-to-r from-yellow-400 to-orange-500 text-white rounded-lg font-semibold hover:from-yellow-500 hover:to-orange-600 transition">
+                        <i class="fas fa-crown mr-2"></i>Upgrade to Download - KSh 15,000/month
+                    </a>
+                    
+                    <button onclick="startOver()" class="mt-4 text-gray-600 hover:underline">
+                        Upload Different File
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let uploadedHeaders = [];
+let uploadedRows = [];
+let suggestedMappings = {};
+let currentMappings = {};
+let isPaid = false;
+let previewData = null;
+
+// File upload handling
+document.getElementById('upload-area').addEventListener('click', function() {
+    document.getElementById('csv-file').click();
+});
+
+document.getElementById('upload-area').addEventListener('dragover', function(e) {
+    e.preventDefault();
+    this.classList.add('border-primary-500', 'bg-primary-50');
+});
+
+document.getElementById('upload-area').addEventListener('dragleave', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-primary-500', 'bg-primary-50');
+});
+
+document.getElementById('upload-area').addEventListener('drop', function(e) {
+    e.preventDefault();
+    this.classList.remove('border-primary-500', 'bg-primary-50');
+    
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        handleFile(files[0]);
+    }
+});
+
+document.getElementById('csv-file').addEventListener('change', function(e) {
+    if (e.target.files.length > 0) {
+        handleFile(e.target.files[0]);
+    }
+});
+
+function handleFile(file) {
+    if (!file.name.endsWith('.csv')) {
+        showFlash('Please upload a CSV file', 'error');
+        return;
+    }
+    
+    if (file.size > 5 * 1024 * 1024) {
+        showFlash('File size exceeds 5MB limit', 'error');
+        return;
+    }
+    
+    document.getElementById('file-name').textContent = file.name;
+    document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    document.getElementById('selected-file').classList.remove('hidden');
+    document.getElementById('upload-btn').disabled = false;
+}
+
+function removeFile() {
+    document.getElementById('csv-file').value = '';
+    document.getElementById('selected-file').classList.add('hidden');
+    document.getElementById('upload-btn').disabled = true;
+}
+
+async function uploadFile() {
+    const fileInput = document.getElementById('csv-file');
+    if (!fileInput.files.length) return;
+    
+    const formData = new FormData();
+    formData.append('file', fileInput.files[0]);
+    
+    const btn = document.getElementById('upload-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Uploading...';
+    
+    try {
+        const response = await fetch('/kemsa/upload', {
+            method: 'POST',
+            body: formData
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            uploadedHeaders = data.headers;
+            uploadedRows = data.preview_rows;
+            suggestedMappings = data.suggested_mappings;
+            isPaid = data.can_download !== false;
+            
+            generateMappingForm();
+            goToStep(2);
+        } else {
+            showFlash(data.error || 'Upload failed', 'error');
+        }
+    } catch (error) {
+        console.error('Upload error:', error);
+        showFlash('Network error. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-upload mr-2"></i>Upload and Continue';
+    }
+}
+
+function generateMappingForm() {
+    const kemsaFields = [
+        { key: 'product_name', label: 'Product Name', required: true },
+        { key: 'quantity', label: 'Quantity', required: true },
+        { key: 'batch_number', label: 'Batch Number', required: false },
+        { key: 'expiry_date', label: 'Expiry Date', required: false },
+        { key: 'unit_of_measure', label: 'Unit of Measure', required: false },
+        { key: 'product_code', label: 'Product Code', required: false },
+        { key: 'gs1_barcode', label: 'GS1 Barcode Data', required: false }
+    ];
+    
+    const formHtml = kemsaFields.map(field => {
+        const suggested = suggestedMappings[field.key];
+        const options = uploadedHeaders.map(h => 
+            `<option value="${h}" ${h === suggested ? 'selected' : ''}>${h}</option>`
+        ).join('');
+        
+        return `
+            <div class="flex items-center">
+                <label class="w-1/3 text-sm font-medium text-gray-700">
+                    ${field.label}
+                    ${field.required ? '<span class="text-red-500">*</span>' : ''}
+                </label>
+                <select id="map-${field.key}" class="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500" onchange="updateMapping('${field.key}', this.value)">
+                    <option value="">-- Select Column --</option>
+                    ${options}
+                </select>
+            </div>
+        `;
+    }).join('');
+    
+    document.getElementById('mapping-form').innerHTML = formHtml;
+    
+    // Initialize current mappings
+    kemsaFields.forEach(field => {
+        const select = document.getElementById(`map-${field.key}`);
+        if (select) {
+            currentMappings[field.key] = select.value;
+        }
+    });
+}
+
+function updateMapping(field, value) {
+    currentMappings[field] = value;
+}
+
+async function previewMapping() {
+    // Validate required fields
+    if (!currentMappings.product_name) {
+        showFlash('Product Name is required', 'error');
+        return;
+    }
+    
+    const btn = document.getElementById('preview-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
+    
+    try {
+        const response = await fetch('/kemsa/preview', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mappings: currentMappings })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            previewData = data;
+            
+            // Update preview table
+            updatePreviewTable(data.preview);
+            
+            // Show validation errors if any
+            const errorsDiv = document.getElementById('validation-errors');
+            if (data.validation.errors.length > 0) {
+                document.getElementById('error-list').innerHTML = data.validation.errors
+                    .map(e => `<li>${e}</li>`).join('');
+                errorsDiv.classList.remove('hidden');
+            } else {
+                errorsDiv.classList.add('hidden');
+            }
+            
+            // Go to download step
+            goToStep(3);
+            
+            // Show appropriate download UI
+            if (data.can_download) {
+                document.getElementById('download-success').classList.remove('hidden');
+                document.getElementById('download-blocked').classList.add('hidden');
+                document.getElementById('download-rows').textContent = `${data.total_rows} rows`;
+            } else {
+                document.getElementById('download-success').classList.add('hidden');
+                document.getElementById('download-blocked').classList.remove('hidden');
+                document.getElementById('preview-row-count').textContent = data.total_rows;
+            }
+        } else {
+            showFlash(data.error || 'Preview failed', 'error');
+        }
+    } catch (error) {
+        console.error('Preview error:', error);
+        showFlash('Network error. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-eye mr-2"></i>Preview';
+    }
+}
+
+function updatePreviewTable(preview) {
+    if (preview.length === 0) return;
+    
+    const headers = Object.keys(preview[0]);
+    
+    // Update table head
+    document.getElementById('preview-head').innerHTML = `
+        <tr>
+            ${headers.map(h => `<th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">${h.replace(/_/g, ' ')}</th>`).join('')}
+        </tr>
+    `;
+    
+    // Update table body
+    document.getElementById('preview-body').innerHTML = preview.map(row => `
+        <tr class="hover:bg-gray-50">
+            ${headers.map(h => `<td class="px-4 py-2 text-sm text-gray-600">${row[h] || '-'}</td>`).join('')}
+        </tr>
+    `).join('');
+}
+
+async function downloadExcel() {
+    try {
+        const btn = document.getElementById('download-btn');
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Downloading...';
+        
+        const response = await fetch('/kemsa/download', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `KEMSA_Export_${new Date().toISOString().split('T')[0]}.xlsx`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            
+            showFlash('Download started!', 'success');
+        } else {
+            const data = await response.json();
+            if (data.upgrade_required) {
+                document.getElementById('download-success').classList.add('hidden');
+                document.getElementById('download-blocked').classList.remove('hidden');
+            } else {
+                showFlash(data.error || 'Download failed', 'error');
+            }
+        }
+    } catch (error) {
+        console.error('Download error:', error);
+        showFlash('Network error. Please try again.', 'error');
+    } finally {
+        const btn = document.getElementById('download-btn');
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-download mr-2"></i>Download Excel File';
+    }
+}
+
+function goToStep(step) {
+    // Hide all steps
+    document.getElementById('step-1').classList.add('hidden');
+    document.getElementById('step-2').classList.add('hidden');
+    document.getElementById('step-3').classList.add('hidden');
+    
+    // Show current step
+    document.getElementById(`step-${step}`).classList.remove('hidden');
+    
+    // Update indicators
+    updateStepIndicators(step);
+}
+
+function updateStepIndicators(currentStep) {
+    const steps = [1, 2, 3];
+    
+    steps.forEach(step => {
+        const indicator = document.getElementById(`step-${step}-indicator`);
+        const text = document.getElementById(`step-${step}-text`);
+        
+        if (step < currentStep) {
+            indicator.className = 'w-10 h-10 bg-green-600 text-white rounded-full flex items-center justify-center font-semibold';
+            indicator.innerHTML = '<i class="fas fa-check"></i>';
+            if (text) text.className = 'text-sm font-medium text-green-600';
+        } else if (step === currentStep) {
+            indicator.className = 'w-10 h-10 bg-primary-600 text-white rounded-full flex items-center justify-center font-semibold';
+            indicator.textContent = step;
+            if (text) text.className = 'text-sm font-medium text-primary-600';
+        } else {
+            indicator.className = 'w-10 h-10 bg-gray-300 text-gray-600 rounded-full flex items-center justify-center font-semibold';
+            indicator.textContent = step;
+            if (text) text.className = 'text-sm font-medium text-gray-500';
+        }
+    });
+    
+    // Update lines
+    document.getElementById('step-1-2-line').className = currentStep >= 2 ? 'w-16 h-0.5 bg-primary-600' : 'w-16 h-0.5 bg-gray-300';
+    document.getElementById('step-2-3-line').className = currentStep >= 3 ? 'w-16 h-0.5 bg-primary-600' : 'w-16 h-0.5 bg-gray-300';
+}
+
+function startOver() {
+    // Reset everything
+    uploadedHeaders = [];
+    uploadedRows = [];
+    currentMappings = {};
+    previewData = null;
+    
+    document.getElementById('csv-file').value = '';
+    document.getElementById('selected-file').classList.add('hidden');
+    document.getElementById('upload-btn').disabled = true;
+    document.getElementById('validation-errors').classList.add('hidden');
+    
+    goToStep(1);
+}
+</script>
+{% endblock %}

@@ -1,0 +1,370 @@
+{% extends "base.html" %}
+
+{% block title %}Generate Barcode - SupplierComply{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Page Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Generate GS1 Barcode</h1>
+                    <p class="text-gray-600 mt-1">Create GS1-128 compliant barcodes for KEMSA</p>
+                </div>
+                <a href="/dashboard" class="text-primary-600 hover:text-primary-800">
+                    <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div class="grid lg:grid-cols-2 gap-8">
+            <!-- Form Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-6">Product Details</h2>
+                
+                <form id="barcode-form" class="space-y-5">
+                    <div>
+                        <label for="product_name" class="block text-sm font-medium text-gray-700 mb-1">
+                            Product Name <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="product_name" name="product_name" required
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="e.g., Paracetamol 500mg Tablets">
+                    </div>
+                    
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label for="batch_number" class="block text-sm font-medium text-gray-700 mb-1">
+                                Batch/Lot Number
+                            </label>
+                            <input type="text" id="batch_number" name="batch_number"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                placeholder="e.g., BATCH001">
+                        </div>
+                        <div>
+                            <label for="quantity" class="block text-sm font-medium text-gray-700 mb-1">
+                                Quantity
+                            </label>
+                            <input type="number" id="quantity" name="quantity" min="1"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                                placeholder="e.g., 100">
+                        </div>
+                    </div>
+                    
+                    <div>
+                        <label for="expiry_date" class="block text-sm font-medium text-gray-700 mb-1">
+                            Expiry Date
+                        </label>
+                        <input type="date" id="expiry_date" name="expiry_date"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <p class="text-xs text-gray-500 mt-1">Used for expiry alerts (paid feature)</p>
+                    </div>
+                    
+                    <div>
+                        <label for="gtin" class="block text-sm font-medium text-gray-700 mb-1">
+                            GTIN-14 (Optional)
+                        </label>
+                        <input type="text" id="gtin" name="gtin" maxlength="14"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                            placeholder="Leave blank to auto-generate">
+                        <p class="text-xs text-gray-500 mt-1">14-digit Global Trade Item Number</p>
+                    </div>
+                    
+                    <div class="pt-4">
+                        <button type="submit" id="generate-btn" class="w-full py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition flex items-center justify-center">
+                            <i class="fas fa-barcode mr-2"></i>
+                            <span>Generate Barcode</span>
+                        </button>
+                    </div>
+                </form>
+                
+                <!-- Usage Stats -->
+                <div class="mt-6 pt-6 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <span class="text-sm text-gray-600">Barcodes this month:</span>
+                        <span class="text-sm font-medium" id="usage-stats">Loading...</span>
+                    </div>
+                    <div id="free-limit-warning" class="hidden mt-2 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                        <p class="text-sm text-yellow-800">
+                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                            You're approaching your free limit. <a href="/payment/upgrade" class="underline">Upgrade</a> for unlimited barcodes.
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Preview Section -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-6">Barcode Preview</h2>
+                
+                <div id="preview-placeholder" class="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center">
+                    <div class="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-barcode text-gray-400 text-3xl"></i>
+                    </div>
+                    <p class="text-gray-500">Fill in the form and click "Generate Barcode" to see preview</p>
+                </div>
+                
+                <div id="preview-container" class="hidden">
+                    <div class="bg-gray-50 rounded-lg p-6 mb-4">
+                        <img id="barcode-image" src="" alt="Generated Barcode" class="mx-auto max-w-full">
+                    </div>
+                    
+                    <div class="space-y-3">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">GTIN:</span>
+                            <span class="font-mono text-gray-900" id="preview-gtin">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">GS1 Data:</span>
+                            <span class="font-mono text-gray-900 text-xs" id="preview-gs1">-</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Status:</span>
+                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-xs">GS1 Compliant</span>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-6 flex space-x-3">
+                        <a id="download-btn" href="" download class="flex-1 py-3 bg-primary-600 text-white rounded-lg font-semibold text-center hover:bg-primary-700 transition">
+                            <i class="fas fa-download mr-2"></i>Download PNG
+                        </a>
+                        <button onclick="printBarcode()" class="px-4 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                            <i class="fas fa-print"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Upgrade CTA (Free Users) -->
+                <div id="upgrade-cta" class="hidden mt-6 p-4 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-lg text-white text-center">
+                    <p class="font-semibold mb-2">You've used all free barcodes!</p>
+                    <p class="text-sm mb-3">Upgrade to generate unlimited barcodes without watermarks.</p>
+                    <a href="/payment/upgrade" class="inline-block px-6 py-2 bg-white text-orange-600 rounded-lg font-semibold hover:bg-gray-100 transition">
+                        Upgrade Now
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Recent Barcodes -->
+        <div class="mt-8 bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <h2 class="text-lg font-semibold text-gray-900">Recently Generated</h2>
+            </div>
+            <div class="p-6">
+                <div id="recent-barcodes" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <!-- Recent barcodes will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Print Modal -->
+<div id="print-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl p-8 max-w-md mx-4">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Print Barcode</h3>
+        <p class="text-gray-600 mb-6">For best results, use a laser printer and label paper (e.g., Avery labels).</p>
+        
+        <div class="space-y-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Label Size</label>
+                <select id="label-size" class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+                    <option value="2x1">2" x 1" (Standard)</option>
+                    <option value="4x2">4" x 2" (Large)</option>
+                    <option value="4x6">4" x 6" (Shipping)</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-2">Copies</label>
+                <input type="number" id="print-copies" value="1" min="1" max="100"
+                    class="w-full px-4 py-2 border border-gray-300 rounded-lg">
+            </div>
+        </div>
+        
+        <div class="mt-6 flex space-x-3">
+            <button onclick="confirmPrint()" class="flex-1 py-3 bg-primary-600 text-white rounded-lg font-semibold hover:bg-primary-700 transition">
+                Print
+            </button>
+            <button onclick="closePrintModal()" class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentBarcodeUrl = '';
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadUsageStats();
+    loadRecentBarcodes();
+});
+
+async function loadUsageStats() {
+    try {
+        const response = await fetch('/barcode/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            const statsEl = document.getElementById('usage-stats');
+            
+            if (data.free_tier_limit) {
+                statsEl.textContent = `${data.this_month} / ${data.free_tier_limit}`;
+                statsEl.className = 'text-sm font-medium ' + (data.this_month >= data.free_tier_limit * 0.8 ? 'text-yellow-600' : 'text-gray-900');
+                
+                if (data.this_month >= data.free_tier_limit * 0.8) {
+                    document.getElementById('free-limit-warning').classList.remove('hidden');
+                }
+            } else {
+                statsEl.textContent = `${data.this_month} (Unlimited)`;
+                statsEl.className = 'text-sm font-medium text-green-600';
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load usage stats:', error);
+    }
+}
+
+async function loadRecentBarcodes() {
+    try {
+        const response = await fetch('/barcode/history?per_page=12');
+        const data = await response.json();
+        
+        if (data.success) {
+            const container = document.getElementById('recent-barcodes');
+            
+            if (data.products.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 col-span-full text-center">No barcodes generated yet</p>';
+            } else {
+                container.innerHTML = data.products.map(p => `
+                    <div class="bg-gray-50 rounded-lg p-3 hover:bg-gray-100 transition cursor-pointer" onclick="viewBarcode('${p.barcode_url}')">
+                        <img src="${p.barcode_url}" alt="${p.name}" class="w-full h-12 object-contain mb-2">
+                        <p class="text-xs text-gray-600 truncate">${p.name}</p>
+                        <p class="text-xs text-gray-400">${new Date(p.created_at).toLocaleDateString()}</p>
+                    </div>
+                `).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load recent barcodes:', error);
+    }
+}
+
+// Form submission
+document.getElementById('barcode-form').addEventListener('submit', async function(e) {
+    e.preventDefault();
+    
+    const btn = document.getElementById('generate-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Generating...';
+    
+    try {
+        const response = await fetch('/barcode/generate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                product_name: document.getElementById('product_name').value,
+                batch_number: document.getElementById('batch_number').value,
+                expiry_date: document.getElementById('expiry_date').value,
+                quantity: document.getElementById('quantity').value,
+                gtin: document.getElementById('gtin').value
+            })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            // Show preview
+            document.getElementById('preview-placeholder').classList.add('hidden');
+            document.getElementById('preview-container').classList.remove('hidden');
+            
+            document.getElementById('barcode-image').src = data.barcode_url;
+            document.getElementById('preview-gtin').textContent = data.gtin;
+            document.getElementById('preview-gs1').textContent = data.gs1_data;
+            document.getElementById('download-btn').href = data.barcode_url;
+            
+            currentBarcodeUrl = data.barcode_url;
+            
+            // Update usage stats
+            loadUsageStats();
+            loadRecentBarcodes();
+            
+            showFlash('Barcode generated successfully!', 'success');
+        } else if (data.upgrade_required) {
+            document.getElementById('upgrade-cta').classList.remove('hidden');
+            showFlash(data.error, 'error');
+        } else {
+            showFlash(data.error || 'Generation failed', 'error');
+        }
+    } catch (error) {
+        console.error('Barcode generation error:', error);
+        showFlash('Network error. Please try again.', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="fas fa-barcode mr-2"></i><span>Generate Barcode</span>';
+    }
+});
+
+function viewBarcode(url) {
+    document.getElementById('preview-placeholder').classList.add('hidden');
+    document.getElementById('preview-container').classList.remove('hidden');
+    document.getElementById('barcode-image').src = url;
+    document.getElementById('download-btn').href = url;
+    currentBarcodeUrl = url;
+}
+
+function printBarcode() {
+    if (!currentBarcodeUrl) {
+        showFlash('Generate a barcode first', 'error');
+        return;
+    }
+    document.getElementById('print-modal').classList.remove('hidden');
+}
+
+function closePrintModal() {
+    document.getElementById('print-modal').classList.add('hidden');
+}
+
+function confirmPrint() {
+    const copies = document.getElementById('print-copies').value;
+    const labelSize = document.getElementById('label-size').value;
+    
+    // Open print window
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Print Barcode</title>
+            <style>
+                body { margin: 0; padding: 20px; }
+                .barcode-container { text-align: center; }
+                .barcode { max-width: 100%; height: auto; }
+                @media print {
+                    body { padding: 0; }
+                    .no-print { display: none; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="no-print" style="margin-bottom: 20px; padding: 10px; background: #f3f4f6;">
+                <button onclick="window.print()" style="padding: 10px 20px;">Print</button>
+                <button onclick="window.close()" style="padding: 10px 20px;">Close</button>
+            </div>
+            <div class="barcode-container">
+                ${Array(parseInt(copies)).fill(`<img src="${currentBarcodeUrl}" class="barcode" style="margin-bottom: 20px;">`).join('')}
+            </div>
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    
+    closePrintModal();
+}
+</script>
+{% endblock %}

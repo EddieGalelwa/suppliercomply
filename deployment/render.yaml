@@ -1,0 +1,65 @@
+# SupplierComply - Render Deployment Configuration
+# This file allows one-click deployment to Render.com
+
+services:
+  # Web Service
+  - type: web
+    name: suppliercomply
+    runtime: python
+    plan: free
+    buildCommand: cd backend && pip install -r requirements.txt
+    startCommand: cd backend && gunicorn app:app
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.0
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        fromDatabase:
+          name: suppliercomply-db
+          property: connectionString
+      - key: CLOUDINARY_CLOUD_NAME
+        sync: false
+      - key: CLOUDINARY_API_KEY
+        sync: false
+      - key: CLOUDINARY_API_SECRET
+        sync: false
+      - key: MAIL_SERVER
+        value: smtp.gmail.com
+      - key: MAIL_PORT
+        value: 587
+      - key: MAIL_USE_TLS
+        value: "True"
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+
+  # Background Worker (optional - for future use)
+  # - type: worker
+  #   name: suppliercomply-worker
+  #   runtime: python
+  #   plan: free
+  #   buildCommand: cd backend && pip install -r requirements.txt
+  #   startCommand: cd backend && python worker.py
+  #   envVars:
+  #     - key: DATABASE_URL
+  #       fromDatabase:
+  #         name: suppliercomply-db
+  #         property: connectionString
+
+databases:
+  - name: suppliercomply-db
+    plan: free
+    databaseName: suppliercomply
+    user: suppliercomply
+
+# Environment Group (for shared variables)
+# envVarGroups:
+#   - name: suppliercomply-settings
+#     envVars:
+#       - key: EQUITY_PAYBILL
+#         value: "247247"

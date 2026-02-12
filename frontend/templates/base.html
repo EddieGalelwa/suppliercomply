@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="SupplierComply - GS1 Barcode Compliance Platform for Kenya Medical Suppliers">
+    <title>{% block title %}SupplierComply{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Custom Styles -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: {
+                            50: '#eff6ff',
+                            100: '#dbeafe',
+                            500: '#3b82f6',
+                            600: '#2563eb',
+                            700: '#1d4ed8',
+                            800: '#1e40af',
+                            900: '#1e3a8a',
+                        },
+                        secondary: {
+                            500: '#10b981',
+                            600: '#059669',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    
+    {% block extra_head %}{% endblock %}
+</head>
+<body class="bg-gray-50 font-sans min-h-screen">
+    <!-- Navigation -->
+    <nav class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <!-- Logo -->
+                <div class="flex items-center">
+                    <a href="/" class="flex items-center space-x-2">
+                        <div class="w-8 h-8 bg-primary-600 rounded-lg flex items-center justify-center">
+                            <i class="fas fa-barcode text-white text-sm"></i>
+                        </div>
+                        <span class="text-xl font-bold text-gray-900">SupplierComply</span>
+                    </a>
+                </div>
+                
+                <!-- Desktop Navigation -->
+                <div class="hidden md:flex items-center space-x-6">
+                    {% if current_user.is_authenticated %}
+                        <a href="/dashboard" class="text-gray-600 hover:text-primary-600 font-medium">Dashboard</a>
+                        <a href="/barcode" class="text-gray-600 hover:text-primary-600 font-medium">Generate Barcode</a>
+                        <a href="/kemsa" class="text-gray-600 hover:text-primary-600 font-medium">KEMSA Export</a>
+                        
+                        <!-- Payment Status Badge -->
+                        {% if current_user.is_paid() %}
+                            <span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-medium">
+                                <i class="fas fa-check-circle mr-1"></i>Paid
+                            </span>
+                        {% elif current_user.is_trial_active() %}
+                            <span class="px-3 py-1 bg-yellow-100 text-yellow-800 rounded-full text-sm font-medium">
+                                <i class="fas fa-clock mr-1"></i>Trial
+                            </span>
+                        {% else %}
+                            <a href="/payment/upgrade" class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-medium hover:bg-red-200">
+                                <i class="fas fa-exclamation-circle mr-1"></i>Upgrade
+                            </a>
+                        {% endif %}
+                        
+                        <!-- User Menu -->
+                        <div class="relative" id="user-menu">
+                            <button onclick="toggleUserMenu()" class="flex items-center space-x-2 text-gray-700 hover:text-gray-900">
+                                <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-primary-600 text-sm"></i>
+                                </div>
+                                <span class="text-sm font-medium">{{ current_user.email.split('@')[0] }}</span>
+                                <i class="fas fa-chevron-down text-xs"></i>
+                            </button>
+                            
+                            <div id="user-dropdown" class="hidden absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-2 z-50">
+                                <div class="px-4 py-2 border-b border-gray-100">
+                                    <p class="text-sm font-medium text-gray-900">{{ current_user.company_name or 'Your Company' }}</p>
+                                    <p class="text-xs text-gray-500">{{ current_user.email }}</p>
+                                    <p class="text-xs text-primary-600 mt-1">Code: {{ current_user.payment_code }}</p>
+                                </div>
+                                <a href="/payment/upgrade" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
+                                    <i class="fas fa-crown mr-2 text-yellow-500"></i>Upgrade Plan
+                                </a>
+                                <button onclick="logout()" class="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50">
+                                    <i class="fas fa-sign-out-alt mr-2"></i>Logout
+                                </button>
+                            </div>
+                        </div>
+                    {% else %}
+                        <a href="/auth/login" class="text-gray-600 hover:text-primary-600 font-medium">Login</a>
+                        <a href="/auth/register" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition">
+                            Start Free Trial
+                        </a>
+                    {% endif %}
+                </div>
+                
+                <!-- Mobile menu button -->
+                <div class="md:hidden flex items-center">
+                    <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-gray-900">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Mobile Navigation -->
+        <div id="mobile-menu" class="hidden md:hidden bg-white border-t border-gray-200">
+            {% if current_user.is_authenticated %}
+                <a href="/dashboard" class="block px-4 py-3 text-gray-600 hover:bg-gray-50">Dashboard</a>
+                <a href="/barcode" class="block px-4 py-3 text-gray-600 hover:bg-gray-50">Generate Barcode</a>
+                <a href="/kemsa" class="block px-4 py-3 text-gray-600 hover:bg-gray-50">KEMSA Export</a>
+                <a href="/payment/upgrade" class="block px-4 py-3 text-gray-600 hover:bg-gray-50">Upgrade</a>
+                <button onclick="logout()" class="w-full text-left px-4 py-3 text-red-600 hover:bg-red-50">Logout</button>
+            {% else %}
+                <a href="/auth/login" class="block px-4 py-3 text-gray-600 hover:bg-gray-50">Login</a>
+                <a href="/auth/register" class="block px-4 py-3 text-primary-600 font-medium hover:bg-primary-50">Start Free Trial</a>
+            {% endif %}
+        </div>
+    </nav>
+    
+    <!-- Flash Messages -->
+    <div id="flash-messages" class="fixed top-20 right-4 z-50 space-y-2"></div>
+    
+    <!-- Main Content -->
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    
+    <!-- Footer -->
+    <footer class="bg-white border-t border-gray-200 mt-auto">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <div class="w-6 h-6 bg-primary-600 rounded flex items-center justify-center">
+                            <i class="fas fa-barcode text-white text-xs"></i>
+                        </div>
+                        <span class="font-bold text-gray-900">SupplierComply</span>
+                    </div>
+                    <p class="text-sm text-gray-600">GS1 Barcode Compliance Platform for Kenya Medical Suppliers</p>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">Product</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="/barcode" class="hover:text-primary-600">Barcode Generator</a></li>
+                        <li><a href="/kemsa" class="hover:text-primary-600">KEMSA Export</a></li>
+                        <li><a href="/payment/upgrade" class="hover:text-primary-600">Pricing</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">Support</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-primary-600">Help Center</a></li>
+                        <li><a href="#" class="hover:text-primary-600">Contact Us</a></li>
+                        <li><a href="https://wa.me/254700000000" target="_blank" class="hover:text-primary-600">WhatsApp</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="font-semibold text-gray-900 mb-3">Legal</h4>
+                    <ul class="space-y-2 text-sm text-gray-600">
+                        <li><a href="#" class="hover:text-primary-600">Privacy Policy</a></li>
+                        <li><a href="#" class="hover:text-primary-600">Terms of Service</a></li>
+                    </ul>
+                </div>
+            </div>
+            <div class="border-t border-gray-200 mt-8 pt-8 text-center text-sm text-gray-500">
+                <p>&copy; 2024 SupplierComply. All rights reserved.</p>
+            </div>
+        </div>
+    </footer>
+    
+    <!-- Loading Overlay -->
+    <div id="loading-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="bg-white rounded-lg p-6 flex items-center space-x-4">
+            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary-600"></div>
+            <span class="text-gray-700">Loading...</span>
+        </div>
+    </div>
+    
+    <!-- Base JavaScript -->
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+    
+    {% block extra_scripts %}{% endblock %}
+</body>
+</html>

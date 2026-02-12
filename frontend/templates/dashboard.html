@@ -1,0 +1,506 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - SupplierComply{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Page Header -->
+    <div class="bg-white shadow-sm border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-900">Dashboard</h1>
+                    <p class="text-gray-600 mt-1">Welcome back, {{ current_user.company_name or current_user.email.split('@')[0] }}</p>
+                </div>
+                <div class="mt-4 md:mt-0 flex space-x-3">
+                    <a href="/barcode" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition">
+                        <i class="fas fa-plus mr-2"></i>Generate Barcode
+                    </a>
+                    <a href="/kemsa" class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg font-medium hover:bg-gray-50 transition">
+                        <i class="fas fa-file-export mr-2"></i>KEMSA Export
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Upgrade Banner (Free/Trial Users) -->
+        <div id="upgrade-banner" class="hidden mb-8">
+            <div class="bg-gradient-to-r from-yellow-400 to-orange-500 rounded-xl p-6 text-white">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold mb-1">
+                            <i class="fas fa-crown mr-2"></i>Unlock Unlimited Features
+                        </h3>
+                        <p class="text-white/90">Upgrade to paid tier for unlimited barcodes, KEMSA exports, and expiry alerts.</p>
+                    </div>
+                    <div class="mt-4 md:mt-0">
+                        <a href="/payment/upgrade" class="px-6 py-3 bg-white text-orange-600 rounded-lg font-semibold hover:bg-gray-100 transition">
+                            Upgrade Now - KSh 15,000/month
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Trial Expiring Banner -->
+        <div id="trial-expiring-banner" class="hidden mb-8">
+            <div class="bg-red-50 border border-red-200 rounded-xl p-6">
+                <div class="flex items-start">
+                    <i class="fas fa-exclamation-triangle text-red-500 text-xl mt-1 mr-4"></i>
+                    <div>
+                        <h3 class="text-lg font-bold text-red-800 mb-1">Your Trial Expires Soon</h3>
+                        <p class="text-red-700">Your free trial expires in <span id="days-remaining" class="font-bold">0</span> days. Upgrade now to keep access.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <!-- Total Barcodes -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Barcodes</p>
+                        <p class="text-3xl font-bold text-gray-900" id="total-barcodes">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-barcode text-primary-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- This Month -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">This Month</p>
+                        <p class="text-3xl font-bold text-gray-900" id="this-month">-</p>
+                        <p class="text-xs text-gray-400" id="free-limit-text"></p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-calendar text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment Status -->
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Status</p>
+                        <p class="text-lg font-bold" id="payment-status">-</p>
+                        <p class="text-xs text-gray-400" id="status-expiry"></p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center" id="status-icon-container">
+                        <i class="fas fa-check-circle text-green-600 text-xl" id="status-icon"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Expiring Products (Paid Only) -->
+            <div class="bg-white rounded-xl shadow-sm p-6" id="expiry-card">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Expiring Soon</p>
+                        <p class="text-3xl font-bold text-gray-900" id="expiring-count">-</p>
+                        <p class="text-xs text-gray-400">Next 30 days</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Expiry Alerts Section (Paid Only) -->
+        <div id="expiry-alerts-section" class="hidden mb-8">
+            <div class="bg-white rounded-xl shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-200">
+                    <h2 class="text-lg font-semibold text-gray-900">
+                        <i class="fas fa-bell mr-2 text-yellow-500"></i>Expiry Alerts
+                    </h2>
+                </div>
+                <div class="p-6">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4" id="expiry-stats">
+                        <!-- Expiry stats will be populated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Products Table -->
+        <div class="bg-white rounded-xl shadow-sm">
+            <div class="px-6 py-4 border-b border-gray-200">
+                <div class="flex flex-col md:flex-row md:items-center md:justify-between">
+                    <h2 class="text-lg font-semibold text-gray-900">Your Products</h2>
+                    <div class="mt-4 md:mt-0 flex space-x-3">
+                        <input type="text" id="search-input" placeholder="Search products..."
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                        <select id="expiry-filter" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500">
+                            <option value="">All Products</option>
+                            <option value="expired">Expired</option>
+                            <option value="30_days">Expiring in 30 days</option>
+                            <option value="60_days">Expiring in 60 days</option>
+                            <option value="90_days">Expiring in 90 days</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="overflow-x-auto">
+                <table class="w-full">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">GTIN</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Batch</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Expiry</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Qty</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Generated</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="products-table-body" class="divide-y divide-gray-200">
+                        <!-- Products will be loaded here -->
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Pagination -->
+            <div class="px-6 py-4 border-t border-gray-200">
+                <div class="flex items-center justify-between">
+                    <p class="text-sm text-gray-600">
+                        Showing <span id="showing-start">0</span> to <span id="showing-end">0</span> of <span id="total-products">0</span> products
+                    </p>
+                    <div class="flex space-x-2">
+                        <button id="prev-page" class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <span id="page-info" class="px-3 py-1 text-sm text-gray-600">Page 1</span>
+                        <button id="next-page" class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="mt-8 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <a href="/barcode" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-barcode text-primary-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Generate Barcode</h3>
+                        <p class="text-sm text-gray-500">Create new GS1 barcode</p>
+                    </div>
+                </div>
+            </a>
+            
+            <a href="/kemsa" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-excel text-green-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">KEMSA Export</h3>
+                        <p class="text-sm text-gray-500">Export to Excel</p>
+                    </div>
+                </div>
+            </a>
+            
+            <button onclick="generateAuditReport()" id="audit-report-btn" class="bg-white rounded-xl shadow-sm p-6 hover:shadow-md transition text-left disabled:opacity-50">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+                        <i class="fas fa-file-pdf text-purple-600 text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-gray-900">Audit Report</h3>
+                        <p class="text-sm text-gray-500">Download PDF (Paid)</p>
+                    </div>
+                </div>
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentPage = 1;
+let totalPages = 1;
+let isPaid = false;
+
+// Load dashboard stats
+document.addEventListener('DOMContentLoaded', function() {
+    loadStats();
+    loadProducts();
+    
+    // Search input handler
+    document.getElementById('search-input').addEventListener('input', debounce(function() {
+        currentPage = 1;
+        loadProducts();
+    }, 300));
+    
+    // Expiry filter handler
+    document.getElementById('expiry-filter').addEventListener('change', function() {
+        currentPage = 1;
+        loadProducts();
+    });
+    
+    // Pagination handlers
+    document.getElementById('prev-page').addEventListener('click', function() {
+        if (currentPage > 1) {
+            currentPage--;
+            loadProducts();
+        }
+    });
+    
+    document.getElementById('next-page').addEventListener('click', function() {
+        if (currentPage < totalPages) {
+            currentPage++;
+            loadProducts();
+        }
+    });
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch('/dashboard/api/stats');
+        const data = await response.json();
+        
+        if (data.success) {
+            // Update stats
+            document.getElementById('total-barcodes').textContent = data.stats.total_barcodes;
+            document.getElementById('this-month').textContent = data.stats.this_month;
+            
+            // Free limit text
+            if (data.stats.free_tier_limit) {
+                document.getElementById('free-limit-text').textContent = `of ${data.stats.free_tier_limit} free limit`;
+            }
+            
+            // Payment status
+            isPaid = data.payment_status.is_paid;
+            const statusEl = document.getElementById('payment-status');
+            const statusExpiry = document.getElementById('status-expiry');
+            const statusIcon = document.getElementById('status-icon');
+            const statusIconContainer = document.getElementById('status-icon-container');
+            
+            if (data.payment_status.is_paid) {
+                statusEl.textContent = 'Paid';
+                statusEl.className = 'text-lg font-bold text-green-600';
+                statusExpiry.textContent = `Until ${new Date(data.payment_status.paid_until).toLocaleDateString()}`;
+                statusIcon.className = 'fas fa-check-circle text-green-600 text-xl';
+                statusIconContainer.className = 'w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center';
+                
+                // Show expiry alerts section
+                document.getElementById('expiry-alerts-section').classList.remove('hidden');
+                document.getElementById('expiry-card').classList.remove('hidden');
+                document.getElementById('audit-report-btn').disabled = false;
+                
+                // Update expiry stats
+                if (data.expiry_alerts) {
+                    updateExpiryStats(data.expiry_alerts);
+                    document.getElementById('expiring-count').textContent = data.expiry_alerts['30_days'];
+                }
+            } else if (data.payment_status.is_trial_active) {
+                statusEl.textContent = 'Free Trial';
+                statusEl.className = 'text-lg font-bold text-yellow-600';
+                statusExpiry.textContent = `${data.payment_status.days_remaining} days left`;
+                statusIcon.className = 'fas fa-clock text-yellow-600 text-xl';
+                statusIconContainer.className = 'w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center';
+                
+                // Show upgrade banner
+                document.getElementById('upgrade-banner').classList.remove('hidden');
+                
+                // Show trial expiring banner if less than 3 days
+                if (data.payment_status.days_remaining <= 3) {
+                    document.getElementById('trial-expiring-banner').classList.remove('hidden');
+                    document.getElementById('days-remaining').textContent = data.payment_status.days_remaining;
+                }
+                
+                // Hide expiry card for trial users
+                document.getElementById('expiry-card').classList.add('hidden');
+                document.getElementById('audit-report-btn').disabled = true;
+            } else {
+                statusEl.textContent = 'Expired';
+                statusEl.className = 'text-lg font-bold text-red-600';
+                statusExpiry.textContent = 'Upgrade required';
+                statusIcon.className = 'fas fa-exclamation-circle text-red-600 text-xl';
+                statusIconContainer.className = 'w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center';
+                
+                // Show upgrade banner
+                document.getElementById('upgrade-banner').classList.remove('hidden');
+                document.getElementById('expiry-card').classList.add('hidden');
+                document.getElementById('audit-report-btn').disabled = true;
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load stats:', error);
+    }
+}
+
+function updateExpiryStats(alerts) {
+    const statsHtml = `
+        <div class="bg-red-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-red-600">${alerts.expired}</p>
+            <p class="text-sm text-red-700">Expired</p>
+        </div>
+        <div class="bg-orange-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-orange-600">${alerts['30_days']}</p>
+            <p class="text-sm text-orange-700">&lt; 30 days</p>
+        </div>
+        <div class="bg-yellow-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-yellow-600">${alerts['60_days']}</p>
+            <p class="text-sm text-yellow-700">30-60 days</p>
+        </div>
+        <div class="bg-green-50 rounded-lg p-4 text-center">
+            <p class="text-2xl font-bold text-green-600">${alerts['90_days']}</p>
+            <p class="text-sm text-green-700">60-90 days</p>
+        </div>
+    `;
+    document.getElementById('expiry-stats').innerHTML = statsHtml;
+}
+
+async function loadProducts() {
+    try {
+        showLoading(true);
+        
+        const search = document.getElementById('search-input').value;
+        const expiryFilter = document.getElementById('expiry-filter').value;
+        
+        let url = `/dashboard/api/products?page=${currentPage}&per_page=20`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (expiryFilter && isPaid) url += `&expiry_filter=${expiryFilter}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('products-table-body');
+            tbody.innerHTML = '';
+            
+            if (data.products.length === 0) {
+                tbody.innerHTML = `
+                    <tr>
+                        <td colspan="7" class="px-6 py-12 text-center text-gray-500">
+                            <i class="fas fa-inbox text-4xl mb-4"></i>
+                            <p>No products found. <a href="/barcode" class="text-primary-600 hover:underline">Generate your first barcode</a></p>
+                        </td>
+                    </tr>
+                `;
+            } else {
+                data.products.forEach(product => {
+                    const row = document.createElement('tr');
+                    row.className = 'hover:bg-gray-50';
+                    
+                    let expiryBadge = '';
+                    if (isPaid && product.expiry_status) {
+                        const colorClass = product.expiry_status.color === 'red' ? 'bg-red-100 text-red-800' : 
+                                          product.expiry_status.color === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                                          'bg-green-100 text-green-800';
+                        expiryBadge = `<span class="px-2 py-1 ${colorClass} rounded text-xs">${product.expiry_status.status}</span>`;
+                    }
+                    
+                    row.innerHTML = `
+                        <td class="px-6 py-4">
+                            <div class="flex items-center">
+                                <img src="${product.barcode_url}" alt="Barcode" class="w-12 h-8 object-contain mr-3">
+                                <span class="font-medium text-gray-900">${product.name}</span>
+                            </div>
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600 font-mono">${product.gtin || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${product.batch_number || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-600">
+                            ${product.expiry_date ? new Date(product.expiry_date).toLocaleDateString() : 'N/A'}
+                            ${expiryBadge}
+                        </td>
+                        <td class="px-6 py-4 text-sm text-gray-600">${product.quantity || 'N/A'}</td>
+                        <td class="px-6 py-4 text-sm text-gray-500">${new Date(product.created_at).toLocaleDateString()}</td>
+                        <td class="px-6 py-4">
+                            <a href="${product.barcode_url}" target="_blank" class="text-primary-600 hover:text-primary-800 mr-3" title="View">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            <a href="${product.barcode_url}" download class="text-primary-600 hover:text-primary-800" title="Download">
+                                <i class="fas fa-download"></i>
+                            </a>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+            
+            // Update pagination
+            totalPages = data.pages;
+            document.getElementById('showing-start').textContent = data.total > 0 ? (currentPage - 1) * 20 + 1 : 0;
+            document.getElementById('showing-end').textContent = Math.min(currentPage * 20, data.total);
+            document.getElementById('total-products').textContent = data.total;
+            document.getElementById('page-info').textContent = `Page ${currentPage} of ${data.pages}`;
+            document.getElementById('prev-page').disabled = currentPage === 1;
+            document.getElementById('next-page').disabled = currentPage === data.pages;
+        }
+    } catch (error) {
+        console.error('Failed to load products:', error);
+        showFlash('Failed to load products', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+async function generateAuditReport() {
+    if (!isPaid) {
+        showFlash('Audit reports are a paid feature', 'error');
+        return;
+    }
+    
+    try {
+        showLoading(true);
+        
+        const response = await fetch('/dashboard/api/audit-report', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({})
+        });
+        
+        if (response.ok) {
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Audit_Report_${new Date().toISOString().split('T')[0]}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            window.URL.revokeObjectURL(url);
+            document.body.removeChild(a);
+            showFlash('Audit report downloaded', 'success');
+        } else {
+            const data = await response.json();
+            showFlash(data.error || 'Failed to generate report', 'error');
+        }
+    } catch (error) {
+        console.error('Failed to generate audit report:', error);
+        showFlash('Failed to generate report', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Debounce helper
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
+{% endblock %}
