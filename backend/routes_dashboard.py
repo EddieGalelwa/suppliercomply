@@ -8,13 +8,17 @@ import logging
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, send_file
 from flask_login import login_required, current_user
-from sqlalchemy import extract, func
+from sqlalchemy import func, extract
+
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import letter, A4
-from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer, Image as RLImage
+from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
-from app import db, Product, Activity
+
+# Import from extensions and models (no circular import issue)
+from extensions import db
+from models import Product, Activity
 
 logger = logging.getLogger(__name__)
 dashboard_bp = Blueprint('dashboard', __name__, url_prefix='/dashboard')

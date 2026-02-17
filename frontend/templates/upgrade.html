@@ -24,10 +24,10 @@
         <div class="bg-gradient-to-r from-primary-600 to-primary-700 rounded-xl p-8 text-white mb-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                 <div>
-                    <p class="text-primary-200 mb-2">Your Payment Code</p>
+                    <p class="text-primary-200 mb-2">Your Payment Reference</p>
                     <p class="text-4xl font-bold">{{ current_user.payment_code }}</p>
                     <p class="text-primary-200 mt-2 text-sm">
-                        <i class="fas fa-info-circle mr-1"></i>Save this code! You'll need it for M-Pesa payments.
+                        <i class="fas fa-info-circle mr-1"></i>Save this! You'll enter it in the M-Pesa Reference field.
                     </p>
                 </div>
                 <div class="mt-6 md:mt-0 text-center">
@@ -76,10 +76,10 @@
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">Enter Account Number</p>
-                            <div class="bg-yellow-100 border-2 border-yellow-400 rounded-lg px-4 py-2 mt-1">
-                                <p class="text-2xl font-bold text-yellow-900">{{ current_user.payment_code }}</p>
-                                <p class="text-xs text-yellow-700">
-                                    <i class="fas fa-exclamation-circle mr-1"></i>Enter YOUR code exactly!
+                            <div class="bg-green-100 border-2 border-green-400 rounded-lg px-4 py-2 mt-1">
+                                <p class="text-2xl font-bold text-green-900">1720186723098</p>
+                                <p class="text-xs text-green-700">
+                                    <i class="fas fa-check-circle mr-1"></i>SupplierComply Account
                                 </p>
                             </div>
                         </div>
@@ -88,6 +88,24 @@
                     <div class="flex items-start">
                         <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
                             <span class="text-primary-600 font-bold text-sm">4</span>
+                        </div>
+                        <div>
+                            <p class="font-medium text-gray-900">Enter Reference (Important!)</p>
+                            <div class="bg-yellow-100 border-2 border-yellow-400 rounded-lg px-4 py-2 mt-1">
+                                <p class="text-2xl font-bold text-yellow-900">{{ current_user.payment_code }}</p>
+                                <p class="text-xs text-yellow-700">
+                                    <i class="fas fa-exclamation-circle mr-1"></i>Enter YOUR code in Reference field!
+                                </p>
+                            </div>
+                            <p class="text-xs text-red-600 mt-1">
+                                <i class="fas fa-warning mr-1"></i>This helps us identify your payment
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <div class="flex items-start">
+                        <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
+                            <span class="text-primary-600 font-bold text-sm">5</span>
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">Enter Amount</p>
@@ -99,11 +117,22 @@
                     
                     <div class="flex items-start">
                         <div class="w-8 h-8 bg-primary-100 rounded-full flex items-center justify-center mr-4 flex-shrink-0">
-                            <span class="text-primary-600 font-bold text-sm">5</span>
+                            <span class="text-primary-600 font-bold text-sm">6</span>
                         </div>
                         <div>
                             <p class="font-medium text-gray-900">Confirm and Pay</p>
                             <p class="text-sm text-gray-600">Enter your M-Pesa PIN to complete</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Save M-Pesa Message Notice -->
+                <div class="mt-6 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                    <div class="flex items-start">
+                        <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                        <div>
+                            <p class="font-medium text-blue-800">Important!</p>
+                            <p class="text-sm text-blue-700">Save the M-Pesa confirmation message you receive. You'll need the confirmation code to complete your upgrade below.</p>
                         </div>
                     </div>
                 </div>
@@ -126,6 +155,15 @@
                     </div>
                     
                     <div id="payment-action">
+                        <div class="mb-4">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                M-Pesa Confirmation Code <span class="text-red-600">*</span>
+                            </label>
+                            <input type="text" id="mpesa-code" placeholder="e.g., QK7X9P2" 
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 uppercase"
+                                   maxlength="10">
+                            <p class="text-xs text-gray-500 mt-1">Find this in your M-Pesa confirmation SMS</p>
+                        </div>
                         <button onclick="markAsPaid()" class="w-full py-4 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
                             <i class="fas fa-check-circle mr-2"></i>I Have Paid - KSh 15,000
                         </button>
@@ -228,8 +266,8 @@
                     <p class="text-sm text-gray-600">Yes, you can cancel anytime. Your access continues until the end of your paid period.</p>
                 </div>
                 <div>
-                    <h4 class="font-medium text-gray-900 mb-2">What if I entered the wrong account number?</h4>
-                    <p class="text-sm text-gray-600">Contact us immediately via WhatsApp with your M-Pesa confirmation message.</p>
+                    <h4 class="font-medium text-gray-900 mb-2">What if I entered the wrong reference?</h4>
+                    <p class="text-sm text-gray-600">Contact us immediately via WhatsApp with your M-Pesa confirmation message and payment code.</p>
                 </div>
                 <div>
                     <h4 class="font-medium text-gray-900 mb-2">Do you offer refunds?</h4>
@@ -241,7 +279,7 @@
         <!-- Support -->
         <div class="mt-8 text-center">
             <p class="text-gray-600 mb-4">Need help with payment?</p>
-            <a href="https://wa.me/254724896761" target="_blank" class="inline-flex items-center px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition">
+            <a href="https://wa.me/254700000000 " target="_blank" class="inline-flex items-center px-6 py-3 bg-green-500 text-white rounded-lg font-semibold hover:bg-green-600 transition">
                 <i class="fab fa-whatsapp mr-2"></i>Chat on WhatsApp
             </a>
         </div>
@@ -316,6 +354,14 @@ async function loadPaymentStatus() {
 }
 
 async function markAsPaid() {
+    const mpesaCode = document.getElementById('mpesa-code').value.trim().toUpperCase();
+    
+    if (!mpesaCode) {
+        showFlash('Please enter your M-Pesa confirmation code', 'error');
+        document.getElementById('mpesa-code').focus();
+        return;
+    }
+    
     const btn = event.target;
     btn.disabled = true;
     btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Processing...';
@@ -323,7 +369,8 @@ async function markAsPaid() {
     try {
         const response = await fetch('/payment/api/i-have-paid', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' }
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mpesa_confirmation_code: mpesaCode })
         });
         
         const data = await response.json();
@@ -361,6 +408,7 @@ async function cancelPending() {
             showFlash('Payment request cancelled', 'success');
             document.getElementById('payment-action').classList.remove('hidden');
             document.getElementById('payment-pending').classList.add('hidden');
+            document.getElementById('mpesa-code').value = '';
             loadPaymentStatus();
         } else {
             showFlash(data.error || 'Cancel failed', 'error');

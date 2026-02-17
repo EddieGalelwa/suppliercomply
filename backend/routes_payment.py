@@ -8,10 +8,16 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify
 from flask_login import login_required, current_user
 from flask_mail import Message
-from app import db, mail, User, Payment, Activity
+
+# Import from extensions and models (no circular import issue)
+from extensions import db, mail
+from models import User, Payment, Activity
 
 logger = logging.getLogger(__name__)
 payment_bp = Blueprint('payment', __name__, url_prefix='/payment')
+
+# Admin emails - same as routes_admin.py
+ADMIN_EMAILS = ['test@example.com', 'admin@suppliercomply.co.ke']
 
 
 def log_activity(user_id, action, details=None):
@@ -52,7 +58,7 @@ Your subscription will automatically renew monthly. We'll send a reminder 3 days
 
 Get started: Login at suppliercomply.co.ke/dashboard
 
-Need help? WhatsApp us at +2547XX XXX XXX
+Need help? WhatsApp us at +254724896761
 
 Thank you for choosing SupplierComply!
 
@@ -115,7 +121,8 @@ def get_payment_status():
                 'id': pending_payment.id,
                 'amount': pending_payment.amount,
                 'status': pending_payment.status,
-                'created_at': pending_payment.created_at.isoformat()
+                'created_at': pending_payment.created_at.isoformat(),
+                'mpesa_confirmation_code': pending_payment.mpesa_confirmation_code
             }
         
         # Payment history
@@ -139,11 +146,18 @@ def get_payment_status():
 @payment_bp.route('/api/i-have-paid', methods=['POST'])
 @login_required
 def i_have_paid():
-    """
-    User confirms they have made payment via M-Pesa.
-    Creates a pending payment record for admin review.
-    """
+    """User confirms they have made payment via M-Pesa."""
     try:
+        data = request.get_json() or {}
+        mpesa_confirmation_code = data.get('mpesa_confirmation_code', '').strip().upper()
+        
+        # Validate M-Pesa confirmation code
+        if not mpesa_confirmation_code:
+            return jsonify({
+                'success': False,
+                'error': 'Please enter your M-Pesa confirmation code'
+            }), 400
+        
         # Check if user already has pending payment
         existing_pending = Payment.query.filter_by(
             user_id=current_user.id,
@@ -169,8 +183,9 @@ def i_have_paid():
             user_id=current_user.id,
             amount=15000,  # KSh 15,000 monthly
             payment_code=current_user.payment_code,
-            reference_used=current_user.payment_code,  # User should have entered this in M-Pesa
-            status='pending'
+            reference_used=current_user.payment_code,
+            status='pending',
+            mpesa_confirmation_code=mpesa_confirmation_code  # Store the M-Pesa code
         )
         
         db.session.add(payment)
@@ -181,9 +196,10 @@ def i_have_paid():
         db.session.commit()
         
         # Log activity
-        log_activity(current_user.id, 'payment_initiated', f'Amount: 15000, Code: {current_user.payment_code}')
+        log_activity(current_user.id, 'payment_initiated', 
+                    f'Amount: 15000, Code: {current_user.payment_code}, M-Pesa: {mpesa_confirmation_code}')
         
-        # Send notification to admin (optional - could also be a webhook)
+        # Send notification to admin
         try:
             admin_msg = Message(
                 f'New Payment Pending - {current_user.payment_code}',
@@ -194,19 +210,20 @@ def i_have_paid():
 User: {current_user.email}
 Company: {current_user.company_name or 'N/A'}
 Payment Code: {current_user.payment_code}
+M-Pesa Confirmation: {mpesa_confirmation_code}
 Amount: KSh 15,000
 Time: {datetime.utcnow().strftime('%Y-%m-%d %H:%M:%S')}
 
-Check Equity Bank (Paybill 247247) for deposit with account number: {current_user.payment_code}
+Check Equity Bank (Paybill 247247, Account: 1720186723098) for deposit with reference: {current_user.payment_code}
 
-Confirm at: suppliercomply.co.ke/admin/payments
+Confirm at: suppliercomply.co.ke/admin
 """
             if mail.default_sender:
                 mail.send(admin_msg)
         except Exception as e:
             logger.error(f"Failed to send admin notification: {str(e)}")
         
-        logger.info(f"User {current_user.id} marked as paid (pending confirmation)")
+        logger.info(f"User {current_user.id} marked as paid (pending confirmation), M-Pesa: {mpesa_confirmation_code}")
         
         return jsonify({
             'success': True,
@@ -243,7 +260,7 @@ def cancel_pending():
         if current_user.trial_ends_at and current_user.trial_ends_at > datetime.utcnow():
             current_user.payment_status = 'free_trial'
         else:
-            current_user.payment_status = 'free_trial'  # Keep as free trial even if expired
+            current_user.payment_status = 'free_trial'
         
         db.session.commit()
         
@@ -260,15 +277,12 @@ def cancel_pending():
         return jsonify({'success': False, 'error': 'Failed to cancel payment'}), 500
 
 
-# Admin routes for payment management
 @payment_bp.route('/api/admin/pending')
 @login_required
 def get_pending_payments():
     """Get all pending payments (admin only)."""
     try:
-        # Simple admin check - in production, use proper role-based access
-        # For MVP, we'll check if user ID is 1 (first user/admin)
-        if current_user.id != 1:
+        if current_user.email not in ADMIN_EMAILS:
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
         
         pending = Payment.query.filter_by(status='pending').order_by(
@@ -284,6 +298,7 @@ def get_pending_payments():
                 'company_name': p.user.company_name,
                 'amount': p.amount,
                 'payment_code': p.payment_code,
+                'mpesa_confirmation_code': p.mpesa_confirmation_code,
                 'reference_used': p.reference_used,
                 'created_at': p.created_at.isoformat()
             } for p in pending]
@@ -299,8 +314,7 @@ def get_pending_payments():
 def confirm_payment():
     """Confirm a pending payment (admin only)."""
     try:
-        # Admin check
-        if current_user.id != 1:
+        if current_user.email not in ADMIN_EMAILS:
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
         
         data = request.get_json()
@@ -357,8 +371,7 @@ def confirm_payment():
 def set_trial():
     """Set user to free trial (admin only)."""
     try:
-        # Admin check
-        if current_user.id != 1:
+        if current_user.email not in ADMIN_EMAILS:
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
         
         data = request.get_json()
@@ -399,8 +412,7 @@ def set_trial():
 def get_all_payment_history():
     """Get all payment history (admin only)."""
     try:
-        # Admin check
-        if current_user.id != 1:
+        if current_user.email not in ADMIN_EMAILS:
             return jsonify({'success': False, 'error': 'Unauthorized'}), 403
         
         page = request.args.get('page', 1, type=int)
@@ -419,6 +431,7 @@ def get_all_payment_history():
                 'company_name': p.user.company_name,
                 'amount': p.amount,
                 'payment_code': p.payment_code,
+                'mpesa_confirmation_code': p.mpesa_confirmation_code,
                 'reference_used': p.reference_used,
                 'status': p.status,
                 'created_at': p.created_at.isoformat(),

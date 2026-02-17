@@ -4,33 +4,76 @@ Handles admin views for user management and system monitoring
 """
 
 import logging
-from functools import wraps
 from datetime import datetime, timedelta
-from flask import Blueprint, render_template, request, jsonify
+from flask import Blueprint, render_template, request, jsonify, session
 from flask_login import login_required, current_user
-from sqlalchemy import func
-from app import db, User, Product, Payment, Activity
+from sqlalchemy import func, extract, or_
+
+# Import from extensions and models (no circular import issue)
+from extensions import db
+from models import User, Product, Payment, Activity
 
 logger = logging.getLogger(__name__)
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+# Your secret admin PIN - change this to something only you know
+ADMIN_PIN = '44277734'
+
 
 def admin_required(f):
     """Decorator to check if user is admin."""
+    from functools import wraps
     @wraps(f)
     def decorated_function(*args, **kwargs):
-        if current_user.id != 1:  # Simple admin check - first user is admin
-            return jsonify({'success': False, 'error': 'Unauthorized - Admin access required'}), 403
+        # Check if user has entered PIN this session
+        if not session.get('admin_verified'):
+            return jsonify({'success': False, 'error': 'Admin PIN required'}), 403
         return f(*args, **kwargs)
     return decorated_function
 
 
 @admin_bp.route('/')
 @login_required
-@admin_required
 def index():
     """Render admin dashboard."""
+    # If not verified, show PIN entry page
+    if not session.get('admin_verified'):
+        return render_template('admin_pin.html')
     return render_template('admin.html')
+
+
+@admin_bp.route('/verify', methods=['POST'])
+@login_required
+def verify_admin():
+    """Verify admin PIN."""
+    try:
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'error': 'No data provided'}), 400
+        
+        pin = data.get('pin', '').strip()
+        
+        if not pin:
+            return jsonify({'success': False, 'error': 'PIN is required'}), 400
+        
+        if pin == ADMIN_PIN:
+            session['admin_verified'] = True
+            session.permanent = True  # Make session persist longer
+            return jsonify({'success': True})
+        else:
+            return jsonify({'success': False, 'error': 'Invalid PIN'}), 401
+            
+    except Exception as e:
+        logger.error(f"Verify admin error: {str(e)}")
+        return jsonify({'success': False, 'error': 'Server error'}), 500
+
+
+@admin_bp.route('/logout', methods=['POST'])
+@login_required
+def admin_logout():
+    """Clear admin verification."""
+    session.pop('admin_verified', None)
+    return jsonify({'success': True})
 
 
 @admin_bp.route('/api/dashboard')
@@ -129,7 +172,7 @@ def get_users():
         # Search filter
         if search:
             query = query.filter(
-                db.or_(
+                or_(
                     User.email.ilike(f'%{search}%'),
                     User.company_name.ilike(f'%{search}%'),
                     User.payment_code.ilike(f'%{search}%')
@@ -367,3 +410,5 @@ def search_payment_code():
     except Exception as e:
         logger.error(f"Search payment code error: {str(e)}")
         return jsonify({'success': False, 'error': 'Search failed'}), 500
+
+

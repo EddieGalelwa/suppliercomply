@@ -5,12 +5,16 @@ Handles user registration, login, logout, and password reset
 
 import re
 import logging
+import secrets
 from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-
 from flask_mail import Message
+
+# Import from extensions and models (no circular import issue)
+from extensions import db, mail
+from models import User, Activity
 
 logger = logging.getLogger(__name__)
 auth_bp = Blueprint('auth', __name__, url_prefix='/auth')
@@ -91,6 +95,9 @@ def register():
         # Log activity
         log_activity(user.id, 'user_registered', f'Company: {company_name}')
         
+        # LOG USER IN IMMEDIATELY AFTER REGISTRATION
+        login_user(user, remember=True)
+        
         # Send welcome email
         try:
             msg = Message(
@@ -124,7 +131,7 @@ The SupplierComply Team
             'success': True,
             'message': 'Registration successful',
             'payment_code': payment_code,
-            'redirect': url_for('auth.login')
+            'redirect': url_for('dashboard.index')  # Redirect to dashboard, not login
         }), 201
         
     except Exception as e:
@@ -207,7 +214,6 @@ def forgot_password():
             return jsonify({'success': True, 'message': 'If the email exists, a reset link has been sent'}), 200
         
         # Generate reset token (simple implementation)
-        import secrets
         reset_token = secrets.token_urlsafe(32)
         
         # Store token in session (in production, use Redis or database)
@@ -339,7 +345,3 @@ def profile():
         logger.error(f"Profile update error: {str(e)}")
         db.session.rollback()
         return jsonify({'success': False, 'error': 'Update failed'}), 500
-
-
-# Import here to avoid circular import
-from app import db, mail, User, Activity

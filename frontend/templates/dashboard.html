@@ -13,6 +13,9 @@
                     <p class="text-gray-600 mt-1">Welcome back, {{ current_user.company_name or current_user.email.split('@')[0] }}</p>
                 </div>
                 <div class="mt-4 md:mt-0 flex space-x-3">
+                    <a href="/admin/" class="px-4 py-2 bg-purple-600 text-white rounded-lg font-medium hover:bg-purple-700 transition">
+                        <i class="fas fa-cog mr-2"></i>Admin Panel
+                    </a>
                     <a href="/barcode" class="px-4 py-2 bg-primary-600 text-white rounded-lg font-medium hover:bg-primary-700 transition">
                         <i class="fas fa-plus mr-2"></i>Generate Barcode
                     </a>
