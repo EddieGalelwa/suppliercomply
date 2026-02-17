@@ -19,7 +19,7 @@ Werkzeug==2.3.7
 
 # Barcode Generation
 python-barcode==0.15.1
-Pillow==10.0.1
+Pillow==10.3.0
 
 # Cloud Storage
 cloudinary==1.36.0
