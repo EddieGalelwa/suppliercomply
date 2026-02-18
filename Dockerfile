@@ -10,11 +10,9 @@ RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements from backend
 COPY backend/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy all backend files
 COPY backend/ .
 
 # Make entrypoint executable
@@ -22,4 +20,5 @@ RUN chmod +x entrypoint.sh
 
 EXPOSE 5000
 
-CMD ["./entrypoint.sh"]
+# Use ENTRYPOINT to ensure it runs
+ENTRYPOINT ["./entrypoint.sh"]
