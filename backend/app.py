@@ -29,7 +29,7 @@ def create_app():
     """Create and configure Flask application."""
     app = Flask(__name__, 
                 template_folder='templates',
-                static_folder='static'
+                static_folder='static')
     
     # Configuration
     app.config['SECRET_KEY'] = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
