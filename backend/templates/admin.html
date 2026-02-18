@@ -1,0 +1,587 @@
+{% extends "base.html" %}
+
+{% block title %}Admin Dashboard - SupplierComply{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-gray-50">
+    <!-- Page Header -->
+    <div class="bg-primary-900 text-white">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h1 class="text-2xl font-bold">Admin Dashboard</h1>
+                    <p class="text-primary-200 mt-1">Manage users, payments, and system</p>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button onclick="logoutAdmin()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition text-sm font-medium">
+                        <i class="fas fa-sign-out-alt mr-2"></i>Logout Admin
+                    </button>
+                    <a href="/dashboard" class="text-primary-200 hover:text-white">
+                        <i class="fas fa-arrow-left mr-1"></i>Back to Dashboard
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <!-- Stats Cards -->
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Users</p>
+                        <p class="text-3xl font-bold text-gray-900" id="stat-total-users">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-users text-blue-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Paid Users</p>
+                        <p class="text-3xl font-bold text-green-600" id="stat-paid-users">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-check-circle text-green-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Pending Payments</p>
+                        <p class="text-3xl font-bold text-yellow-600" id="stat-pending">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-clock text-yellow-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-sm p-6">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <p class="text-sm text-gray-500 mb-1">Total Revenue</p>
+                        <p class="text-3xl font-bold text-primary-600" id="stat-revenue">-</p>
+                    </div>
+                    <div class="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                        <i class="fas fa-money-bill-wave text-primary-600 text-xl"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabs -->
+        <div class="bg-white rounded-xl shadow-sm mb-8">
+            <div class="border-b border-gray-200">
+                <nav class="flex -mb-px">
+                    <button onclick="showTab('pending-payments')" id="tab-pending-payments" class="tab-btn px-6 py-4 border-b-2 border-primary-500 text-primary-600 font-medium">
+                        <i class="fas fa-clock mr-2"></i>Pending Payments
+                    </button>
+                    <button onclick="showTab('users')" id="tab-users" class="tab-btn px-6 py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                        <i class="fas fa-users mr-2"></i>Users
+                    </button>
+                    <button onclick="showTab('payment-history')" id="tab-payment-history" class="tab-btn px-6 py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                        <i class="fas fa-history mr-2"></i>Payment History
+                    </button>
+                    <button onclick="showTab('activities')" id="tab-activities" class="tab-btn px-6 py-4 border-b-2 border-transparent text-gray-500 hover:text-gray-700 font-medium">
+                        <i class="fas fa-list mr-2"></i>Activities
+                    </button>
+                </nav>
+            </div>
+            
+            <!-- Pending Payments Tab -->
+            <div id="content-pending-payments" class="tab-content p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">Pending Payment Confirmations</h2>
+                    <div class="flex space-x-3">
+                        <input type="text" id="search-payment-code" placeholder="Search payment code (e.g., SC003)..."
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+                        <button onclick="searchPaymentCode()" class="px-4 py-2 bg-primary-600 text-white rounded-lg hover:bg-primary-700">
+                            <i class="fas fa-search"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <div id="pending-payments-table" class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">M-Pesa Confirmation</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Requested</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="pending-payments-body" class="divide-y divide-gray-200">
+                            <!-- Pending payments will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div id="no-pending" class="hidden text-center py-12">
+                    <i class="fas fa-check-circle text-green-500 text-4xl mb-4"></i>
+                    <p class="text-gray-600">No pending payments</p>
+                </div>
+            </div>
+            
+            <!-- Users Tab -->
+            <div id="content-users" class="tab-content hidden p-6">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-lg font-semibold text-gray-900">All Users</h2>
+                    <div class="flex space-x-3">
+                        <input type="text" id="search-users" placeholder="Search users..."
+                            class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500">
+                        <select id="filter-status" class="px-4 py-2 border border-gray-300 rounded-lg">
+                            <option value="">All Status</option>
+                            <option value="free_trial">Free Trial</option>
+                            <option value="pending">Pending</option>
+                            <option value="paid">Paid</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Barcodes</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Joined</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-body" class="divide-y divide-gray-200">
+                            <!-- Users will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                <div class="mt-4 flex items-center justify-between">
+                    <p class="text-sm text-gray-600">Showing <span id="users-showing">0</span> of <span id="users-total">0</span> users</p>
+                    <div class="flex space-x-2">
+                        <button onclick="loadUsers(usersPage - 1)" id="users-prev" class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+                            <i class="fas fa-chevron-left"></i>
+                        </button>
+                        <button onclick="loadUsers(usersPage + 1)" id="users-next" class="px-3 py-1 border border-gray-300 rounded-lg text-sm hover:bg-gray-50 disabled:opacity-50">
+                            <i class="fas fa-chevron-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Payment History Tab -->
+            <div id="content-payment-history" class="tab-content hidden p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-6">All Payment History</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Payment Code</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">M-Pesa Confirmation</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Amount</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Date</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payment-history-body" class="divide-y divide-gray-200">
+                            <!-- Payment history will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <!-- Activities Tab -->
+            <div id="content-activities" class="tab-content hidden p-6">
+                <h2 class="text-lg font-semibold text-gray-900 mb-6">System Activities</h2>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
+                                <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Time</th>
+                            </tr>
+                        </thead>
+                        <tbody id="activities-body" class="divide-y divide-gray-200">
+                            <!-- Activities will be loaded here -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Confirm Payment Modal -->
+<div id="confirm-modal" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-white rounded-xl shadow-xl p-6 max-w-md mx-4">
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Confirm Payment</h3>
+        <p class="text-gray-600 mb-6">Verify the M-Pesa confirmation code matches your bank statement before confirming.</p>
+        
+        <div class="bg-gray-50 rounded-lg p-4 mb-6 space-y-2">
+            <p class="text-sm text-gray-600">User: <span id="confirm-user-email" class="font-medium text-gray-900">-</span></p>
+            <p class="text-sm text-gray-600">Payment Code: <span id="confirm-payment-code" class="font-medium text-primary-600">-</span></p>
+            <p class="text-sm text-gray-600">M-Pesa Confirmation: <span id="confirm-mpesa-code" class="font-medium text-green-600 font-mono">-</span></p>
+            <p class="text-sm text-gray-600">Amount: <span class="font-medium text-gray-900">KSh 15,000</span></p>
+        </div>
+        
+        <div class="flex space-x-3">
+            <button onclick="confirmPayment()" id="confirm-btn" class="flex-1 py-3 bg-green-600 text-white rounded-lg font-semibold hover:bg-green-700 transition">
+                Confirm Payment
+            </button>
+            <button onclick="closeConfirmModal()" class="flex-1 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition">
+                Cancel
+            </button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+let currentPaymentId = null;
+let usersPage = 1;
+
+document.addEventListener('DOMContentLoaded', function() {
+    loadDashboardStats();
+    loadPendingPayments();
+    loadUsers(1);
+    loadPaymentHistory();
+    loadActivities();
+});
+
+function showTab(tabName) {
+    // Hide all tabs
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(el => {
+        el.classList.remove('border-primary-500', 'text-primary-600');
+        el.classList.add('border-transparent', 'text-gray-500');
+    });
+    
+    // Show selected tab
+    document.getElementById(`content-${tabName}`).classList.remove('hidden');
+    document.getElementById(`tab-${tabName}`).classList.remove('border-transparent', 'text-gray-500');
+    document.getElementById(`tab-${tabName}`).classList.add('border-primary-500', 'text-primary-600');
+}
+
+async function logoutAdmin() {
+    try {
+        const response = await fetch('/admin/logout', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            window.location.href = '/dashboard';
+        } else {
+            showFlash('Logout failed', 'error');
+        }
+    } catch (error) {
+        console.error('Logout error:', error);
+        showFlash('Network error during logout', 'error');
+    }
+}
+
+async function loadDashboardStats() {
+    try {
+        const response = await fetch('/admin/api/dashboard');
+        const data = await response.json();
+        
+        if (data.success) {
+            document.getElementById('stat-total-users').textContent = data.stats.users.total;
+            document.getElementById('stat-paid-users').textContent = data.stats.users.paid;
+            document.getElementById('stat-pending').textContent = data.stats.users.pending;
+            document.getElementById('stat-revenue').textContent = 'KSh ' + data.stats.revenue.total_confirmed.toLocaleString();
+        }
+    } catch (error) {
+        console.error('Failed to load dashboard stats:', error);
+    }
+}
+async function loadPendingPayments() {
+    try {
+        const response = await fetch('/payment/api/admin/pending');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('pending-payments-body');
+            
+            if (data.pending_payments.length === 0) {
+                document.getElementById('pending-payments-table').classList.add('hidden');
+                document.getElementById('no-pending').classList.remove('hidden');
+            } else {
+                document.getElementById('pending-payments-table').classList.remove('hidden');
+                document.getElementById('no-pending').classList.add('hidden');
+                
+                tbody.innerHTML = data.pending_payments.map(p => {
+                    // Safely encode the M-Pesa code for HTML attribute
+                    const mpesaCode = (p.mpesa_confirmation_code || '').replace(/'/g, "\\'");
+                    return `
+                    <tr>
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-gray-900">${p.user_email}</p>
+                            <p class="text-sm text-gray-500">${p.company_name || 'No company'}</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 bg-primary-100 text-primary-800 rounded text-sm font-medium">${p.payment_code}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 bg-green-100 text-green-800 rounded text-sm font-mono">${p.mpesa_confirmation_code || 'N/A'}</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-900">KSh ${p.amount.toLocaleString()}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${new Date(p.created_at).toLocaleString()}</td>
+                        <td class="px-4 py-3">
+                            <button onclick='openConfirmModal(${p.id}, "${p.user_email}", "${p.payment_code}", "${mpesaCode}")' class="px-3 py-1 bg-green-600 text-white rounded hover:bg-green-700 text-sm">
+                                <i class="fas fa-check mr-1"></i>Confirm
+                            </button>
+                        </td>
+                    </tr>
+                `}).join('');
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load pending payments:', error);
+    }
+}
+
+async function loadUsers(page) {
+    try {
+        usersPage = page;
+        const search = document.getElementById('search-users').value;
+        const status = document.getElementById('filter-status').value;
+        
+        let url = `/admin/api/users?page=${page}&per_page=20`;
+        if (search) url += `&search=${encodeURIComponent(search)}`;
+        if (status) url += `&status=${status}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('users-body');
+            tbody.innerHTML = data.users.map(u => {
+                const statusClass = u.payment_status === 'paid' ? 'bg-green-100 text-green-800' :
+                                   u.payment_status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                   'bg-gray-100 text-gray-800';
+                
+                return `
+                    <tr>
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-gray-900">${u.email}</p>
+                            <p class="text-sm text-gray-500">${u.company_name || 'No company'}</p>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 bg-primary-100 text-primary-800 rounded text-sm">${u.payment_code}</span>
+                        </td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 ${statusClass} rounded text-xs capitalize">${u.payment_status.replace('_', ' ')}</span>
+                        </td>
+                        <td class="px-4 py-3 text-gray-600">${u.barcode_count}</td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${new Date(u.created_at).toLocaleDateString()}</td>
+                        <td class="px-4 py-3">
+                            <button onclick="setTrial(${u.id})" class="text-primary-600 hover:text-primary-800 text-sm mr-3">
+                                Set Trial
+                            </button>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+            
+            document.getElementById('users-showing').textContent = data.users.length;
+            document.getElementById('users-total').textContent = data.total;
+            document.getElementById('users-prev').disabled = page === 1;
+            document.getElementById('users-next').disabled = page >= data.pages;
+        }
+    } catch (error) {
+        console.error('Failed to load users:', error);
+    }
+}
+
+async function loadPaymentHistory() {
+    try {
+        const response = await fetch('/payment/api/admin/payment-history');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('payment-history-body');
+            tbody.innerHTML = data.payments.map(p => {
+                const statusClass = p.status === 'confirmed' ? 'bg-green-100 text-green-800' :
+                                   p.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                   'bg-red-100 text-red-800';
+                
+                return `
+                    <tr>
+                        <td class="px-4 py-3">
+                            <p class="font-medium text-gray-900">${p.user_email}</p>
+                            <p class="text-sm text-gray-500">${p.company_name || 'No company'}</p>
+                        </td>
+                        <td class="px-4 py-3">${p.payment_code}</td>
+                        <td class="px-4 py-3 font-mono text-sm">${p.mpesa_confirmation_code || 'N/A'}</td>
+                        <td class="px-4 py-3">KSh ${p.amount.toLocaleString()}</td>
+                        <td class="px-4 py-3">
+                            <span class="px-2 py-1 ${statusClass} rounded text-xs capitalize">${p.status}</span>
+                        </td>
+                        <td class="px-4 py-3 text-sm text-gray-500">${new Date(p.created_at).toLocaleString()}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+    } catch (error) {
+        console.error('Failed to load payment history:', error);
+    }
+}
+
+async function loadActivities() {
+    try {
+        const response = await fetch('/admin/api/activities');
+        const data = await response.json();
+        
+        if (data.success) {
+            const tbody = document.getElementById('activities-body');
+            tbody.innerHTML = data.activities.map(a => `
+                <tr>
+                    <td class="px-4 py-3">
+                        <p class="font-medium text-gray-900">${a.user_email}</p>
+                    </td>
+                    <td class="px-4 py-3">
+                        <span class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">${a.action}</span>
+                    </td>
+                    <td class="px-4 py-3 text-sm text-gray-600">${a.details || '-'}</td>
+                    <td class="px-4 py-3 text-sm text-gray-500">${new Date(a.created_at).toLocaleString()}</td>
+                </tr>
+            `).join('');
+        }
+    } catch (error) {
+        console.error('Failed to load activities:', error);
+    }
+}
+
+async function searchPaymentCode() {
+    const code = document.getElementById('search-payment-code').value.trim();
+    if (!code) return;
+    
+    try {
+        const response = await fetch(`/admin/api/search-payment-code?code=${encodeURIComponent(code)}`);
+        const data = await response.json();
+        
+        if (data.success) {
+            if (data.pending_payment) {
+                openConfirmModal(data.pending_payment.id, data.user.email, data.user.payment_code, data.pending_payment.mpesa_confirmation_code || '');
+            } else {
+                showFlash('No pending payment found for this code', 'error');
+            }
+        } else {
+            showFlash(data.error || 'Search failed', 'error');
+        }
+    } catch (error) {
+        console.error('Search error:', error);
+        showFlash('Network error', 'error');
+    }
+}
+
+function openConfirmModal(paymentId, email, code, mpesaCode) {
+    currentPaymentId = paymentId;
+    document.getElementById('confirm-user-email').textContent = email;
+    document.getElementById('confirm-payment-code').textContent = code;
+    document.getElementById('confirm-mpesa-code').textContent = mpesaCode || 'N/A';
+    document.getElementById('confirm-modal').classList.remove('hidden');
+}
+
+function closeConfirmModal() {
+    document.getElementById('confirm-modal').classList.add('hidden');
+    currentPaymentId = null;
+}
+
+async function confirmPayment() {
+    if (!currentPaymentId) return;
+    
+    const btn = document.getElementById('confirm-btn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Confirming...';
+    
+    try {
+        const response = await fetch('/payment/api/admin/confirm', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_id: currentPaymentId })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showFlash('Payment confirmed successfully!', 'success');
+            closeConfirmModal();
+            loadPendingPayments();
+            loadDashboardStats();
+            loadPaymentHistory();
+        } else {
+            showFlash(data.error || 'Confirmation failed', 'error');
+        }
+    } catch (error) {
+        console.error('Confirm payment error:', error);
+        showFlash('Network error', 'error');
+    } finally {
+        btn.disabled = false;
+        btn.innerHTML = 'Confirm Payment';
+    }
+}
+
+async function setTrial(userId) {
+    const days = prompt('Enter number of trial days:', '14');
+    if (!days) return;
+    
+    try {
+        const response = await fetch('/payment/api/admin/set-trial', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: userId, days: parseInt(days) })
+        });
+        
+        const data = await response.json();
+        
+        if (data.success) {
+            showFlash('Trial set successfully!', 'success');
+            loadUsers(usersPage);
+            loadDashboardStats();
+        } else {
+            showFlash(data.error || 'Failed to set trial', 'error');
+        }
+    } catch (error) {
+        console.error('Set trial error:', error);
+        showFlash('Network error', 'error');
+    }
+}
+
+// Search and filter handlers
+document.getElementById('search-users').addEventListener('input', debounce(() => loadUsers(1), 300));
+document.getElementById('filter-status').addEventListener('change', () => loadUsers(1));
+
+function debounce(func, wait) {
+    let timeout;
+    return function executedFunction(...args) {
+        const later = () => {
+            clearTimeout(timeout);
+            func(...args);
+        };
+        clearTimeout(timeout);
+        timeout = setTimeout(later, wait);
+    };
+}
+</script>
+{% endblock %}
