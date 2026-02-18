@@ -9,6 +9,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY . .
 
+# Copy static and templates from frontend
+COPY frontend/static ./static
+COPY frontend/templates ./templates
+
 EXPOSE 5000
 
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "app:app"]
+# Create tables and start app
+CMD python -c "from app import app, db; app.app_context().push(); db.create_all()" && gunicorn --bind 0.0.0.0:5000 app:app
