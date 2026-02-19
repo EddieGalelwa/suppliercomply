@@ -2,7 +2,6 @@
 
 WORKDIR /app
 
-# Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     libpq-dev \
@@ -15,10 +14,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
 
-# Make entrypoint executable
-RUN chmod +x entrypoint.sh
-
 EXPOSE 5000
 
-# Use ENTRYPOINT to ensure it runs
-ENTRYPOINT ["./entrypoint.sh"]
+# Use sh to run the script (avoids permission issues)
+CMD sh ./entrypoint.sh
