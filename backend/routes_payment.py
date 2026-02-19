@@ -65,7 +65,8 @@ Thank you for choosing SupplierComply!
 Best regards,
 The SupplierComply Team
 """
-        mail.send(msg)
+        # Temporarily disabled - will add SendGrid later
+        logger.info(f'EMAIL WOULD SEND TO: {msg.recipients}')
         logger.info(f"Payment confirmation email sent to {user.email}")
     except Exception as e:
         logger.error(f"Failed to send payment confirmation email: {str(e)}")
@@ -219,7 +220,8 @@ Check Equity Bank (Paybill 247247, Account: 1720186723098) for deposit with refe
 Confirm at: suppliercomply.co.ke/admin
 """
             if mail.default_sender:
-                mail.send(admin_msg)
+                # Temporarily disabled - will add SendGrid later
+                logger.info(f'EMAIL WOULD SEND TO: {admin_msg.recipients}')
         except Exception as e:
             logger.error(f"Failed to send admin notification: {str(e)}")
         
