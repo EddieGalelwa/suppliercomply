@@ -121,7 +121,8 @@ Need help? Reply to this email or WhatsApp us.
 Best regards,
 The SupplierComply Team
 """
-            mail.send(msg)
+            # Temporarily disabled - will add SendGrid later
+            logger.info(f'EMAIL WOULD SEND TO: {msg.recipients}')
         except Exception as e:
             logger.error(f"Failed to send welcome email: {str(e)}")
         
@@ -244,7 +245,8 @@ If you didn't request this, please ignore this email.
 Best regards,
 The SupplierComply Team
 """
-            mail.send(msg)
+            # Temporarily disabled - will add SendGrid later
+            logger.info(f'EMAIL WOULD SEND TO: {msg.recipients}')
             logger.info(f"Password reset email sent to: {email}")
         except Exception as e:
             logger.error(f"Failed to send reset email: {str(e)}")
