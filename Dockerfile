@@ -14,7 +14,8 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 COPY backend/ .
 
+RUN chmod +x entrypoint.sh
+
 EXPOSE 5000
 
-# Use sh to run the script (avoids permission issues)
-CMD sh ./entrypoint.sh
+ENTRYPOINT [""sh"", ""./entrypoint.sh""]
