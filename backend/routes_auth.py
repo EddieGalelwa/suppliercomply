@@ -10,10 +10,9 @@ from datetime import datetime, timedelta
 from flask import Blueprint, render_template, request, jsonify, redirect, url_for, flash, session
 from flask_login import login_user, logout_user, login_required, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
-from flask_mail import Message
 
 # Import from extensions and models (no circular import issue)
-from extensions import db, mail
+from extensions import db
 from models import User, Activity
 
 logger = logging.getLogger(__name__)
@@ -98,35 +97,8 @@ def register():
         # LOG USER IN IMMEDIATELY AFTER REGISTRATION
         login_user(user, remember=True)
         
-        # Send welcome email
-        try:
-            msg = Message(
-                'Welcome to SupplierComply - Your Payment Code',
-                recipients=[email]
-            )
-            msg.body = f"""Welcome to SupplierComply!
-
-Your account has been created successfully.
-
-YOUR PAYMENT CODE: {payment_code}
-
-IMPORTANT: Save this code! You will need it when making payments via M-Pesa.
-
-Your 14-day free trial starts now. Upgrade anytime to unlock unlimited barcodes and premium features.
-
-Get started: Login at suppliercomply.co.ke
-
-Need help? Reply to this email or WhatsApp us.
-
-Best regards,
-The SupplierComply Team
-"""
-            # Temporarily disabled - will add SendGrid later
-            logger.info(f'EMAIL WOULD SEND TO: {msg.recipients}')
-        except Exception as e:
-            logger.error(f"Failed to send welcome email: {str(e)}")
-        
-        logger.info(f"New user registered: {email} with payment code {payment_code}")
+        # Skip welcome email for now - just log it
+        logger.info(f"User registered: {email} with payment code {payment_code}")
         
         return jsonify({
             'success': True,
@@ -223,34 +195,8 @@ def forgot_password():
             'expires': (datetime.utcnow() + timedelta(hours=1)).isoformat()
         }
         
-        # Send reset email
-        reset_url = f"{request.host_url}auth/reset-password?token={reset_token}&user={user.id}"
-        
-        try:
-            msg = Message(
-                'Password Reset - SupplierComply',
-                recipients=[email]
-            )
-            msg.body = f"""Hello,
-
-You requested a password reset for your SupplierComply account.
-
-Click the link below to reset your password:
-{reset_url}
-
-This link expires in 1 hour.
-
-If you didn't request this, please ignore this email.
-
-Best regards,
-The SupplierComply Team
-"""
-            # Temporarily disabled - will add SendGrid later
-            logger.info(f'EMAIL WOULD SEND TO: {msg.recipients}')
-            logger.info(f"Password reset email sent to: {email}")
-        except Exception as e:
-            logger.error(f"Failed to send reset email: {str(e)}")
-            return jsonify({'success': False, 'error': 'Failed to send reset email'}), 500
+        # Skip reset email for now - just log it
+        logger.info(f"Password reset requested for: {email}")
         
         return jsonify({'success': True, 'message': 'Password reset link sent to your email'}), 200
         
